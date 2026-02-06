@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="icon_tint">#FF000000</color>
+    <color name="waves_primary">#FF1A237E</color>
+    <color name="waves_surface">#FF0D1117</color>
+</resources>

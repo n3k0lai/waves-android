@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Icon inventory for launcher icon pickers.
+        Add entries here as you export icons from Figma.
+        Group by category for organized browsing.
+    -->
+
+    <category title="Waves" />
+    <item drawable="ic_placeholder" />
+
+    <!-- Example categories (uncomment when adding icons):
+    <category title="Google" />
+    <item drawable="ic_chrome" />
+    <item drawable="ic_gmail" />
+
+    <category title="Social" />
+    <item drawable="ic_whatsapp" />
+    <item drawable="ic_telegram" />
+    -->
+</resources>

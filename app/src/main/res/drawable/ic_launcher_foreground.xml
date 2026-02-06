@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Wave shape centered in adaptive icon safe zone (24dp inset) -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M24,58 C30,48 36,38 42,38 C48,38 52,48 54,54 C56,60 60,70 66,70 C72,70 76,60 78,54 C80,48 84,38 84,38"
+        android:strokeWidth="4"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeLineCap="round" />
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M24,68 C30,58 36,48 42,48 C48,48 52,58 54,64 C56,70 60,80 66,80 C72,80 76,70 78,64 C80,58 84,48 84,48"
+        android:strokeWidth="3"
+        android:strokeColor="#BBFFFFFF"
+        android:strokeLineCap="round" />
+</vector>

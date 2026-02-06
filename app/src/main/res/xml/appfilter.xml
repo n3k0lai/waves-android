@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fallback icon compositing for unmapped apps -->
+    <scale factor="0.85" />
+
+    <!--
+        Add icon mappings here as you export from Figma.
+        Format:
+        <item
+            component="ComponentInfo{com.package.name/com.package.name.ActivityName}"
+            drawable="ic_icon_name" />
+    -->
+
+    <!-- Niagara Launcher built-in buttons -->
+    <!--
+    <item component="ComponentInfo{bitpit.launcher/bitpit.launcher.Settings}" drawable="ic_niagara_settings" />
+    <item component="ComponentInfo{bitpit.launcher/bitpit.launcher.Pro}" drawable="ic_niagara_pro" />
+    <item component="ComponentInfo{bitpit.launcher/bitpit.launcher.RecentlyInstalled}" drawable="ic_niagara_recent" />
+    -->
+
+    <!-- Example mappings (uncomment and adjust when adding icons):
+    <item component="ComponentInfo{com.android.chrome/com.google.android.apps.chrome.Main}" drawable="ic_chrome" />
+    <item component="ComponentInfo{com.google.android.gm/com.google.android.gm.ConversationListActivityGmail}" drawable="ic_gmail" />
+    -->
+
+    <!-- Placeholder icon for demonstration -->
+    <item component="ComponentInfo{sh.comfy.waves/sh.comfy.waves.MainActivity}" drawable="ic_placeholder" />
+</resources>

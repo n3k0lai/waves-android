@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Icon name array for ADW/Apex launcher compatibility.
+        Add icon drawable names here as you export from Figma.
+    -->
+    <string-array name="icon_pack" translatable="false">
+        <item>ic_placeholder</item>
+    </string-array>
+</resources>

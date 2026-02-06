@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Lawnchair themed icon map.
+    Maps package names to monochrome drawable resources.
+    Add entries here as you export icons from Figma.
+-->
+<icons>
+    <icon package="sh.comfy.waves" drawable="@drawable/ic_placeholder" />
+
+    <!-- Example mappings (uncomment when adding icons):
+    <icon package="com.android.chrome" drawable="@drawable/ic_chrome" />
+    <icon package="com.google.android.gm" drawable="@drawable/ic_gmail" />
+    -->
+</icons>
