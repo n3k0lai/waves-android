@@ -98,8 +98,11 @@ object GestureHandler {
     }
 
     private fun lockScreen(context: Context) {
+        // Try accessibility service first (preferred, no device admin needed)
+        if (SleepService.lockScreen()) return
+
+        // Fallback to device admin
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            // Requires accessibility service or device admin
             try {
                 val dpm = context.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
                 dpm.lockNow()

@@ -141,6 +141,22 @@
                 android:resource="@xml/keyboard_method" />
         </service>
 
+        <!-- Accessibility Service (for double-tap-to-lock) -->
+        <service
+            android:name=".launcher.gesture.SleepService"
+            android:exported="true"
+            android:label="Waves Screen Lock"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service" />
+        </service>
+
         <!-- Notification Listener (for badge counts) -->
         <service
             android:name=".launcher.home.NotificationBadgeService"

@@ -19,6 +19,9 @@
     <!-- Quick Settings Tile -->
     <string name="tile_label">Waves</string>
 
+    <!-- Sleep service -->
+    <string name="sleep_service_desc">Allows Waves Launcher to lock the screen on double-tap gesture.</string>
+
     <!-- Widget -->
     <string name="widget_name">Waves Fetch</string>
     <string name="widget_description">Screenfetch-style system info widget</string>

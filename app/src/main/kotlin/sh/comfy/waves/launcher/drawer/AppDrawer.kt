@@ -9,6 +9,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -48,6 +49,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
 import sh.comfy.waves.launcher.data.AppInfo
 import sh.comfy.waves.launcher.data.AppRepository
+import sh.comfy.waves.launcher.home.BadgeTracker
 
 /**
  * Full-screen app drawer with search.
@@ -176,25 +178,49 @@ fun AppGridItem(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
 ) {
+    val badgeCount by BadgeTracker.counts.collectAsState()
+    val count = badgeCount[app.packageName] ?: 0
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .clickable { onClick() }
             .padding(vertical = 4.dp),
     ) {
-        // App icon
-        app.icon?.let { drawable ->
-            val bitmap = remember(app.packageName) {
-                drawable.toBitmap(
-                    width = iconSize.value.toInt() * 2,
-                    height = iconSize.value.toInt() * 2,
+        // App icon with badge
+        Box {
+            app.icon?.let { drawable ->
+                val bitmap = remember(app.packageName) {
+                    drawable.toBitmap(
+                        width = iconSize.value.toInt() * 2,
+                        height = iconSize.value.toInt() * 2,
+                    )
+                }
+                Image(
+                    bitmap = bitmap.asImageBitmap(),
+                    contentDescription = app.label,
+                    modifier = Modifier.size(iconSize),
                 )
             }
-            Image(
-                bitmap = bitmap.asImageBitmap(),
-                contentDescription = app.label,
-                modifier = Modifier.size(iconSize),
-            )
+
+            // Notification badge
+            if (count > 0) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .size(18.dp)
+                        .clip(androidx.compose.foundation.shape.CircleShape)
+                        .background(MaterialTheme.colorScheme.error),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = if (count > 99) "99+" else count.toString(),
+                        color = MaterialTheme.colorScheme.onError,
+                        fontSize = 9.sp,
+                        maxLines = 1,
+                    )
+                }
+            }
         }
 
         if (showLabel) {
