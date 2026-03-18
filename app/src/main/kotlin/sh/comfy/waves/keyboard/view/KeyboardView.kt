@@ -46,6 +46,8 @@ import sh.comfy.waves.keyboard.KeyLayout
 import sh.comfy.waves.keyboard.KeyboardController
 import sh.comfy.waves.keyboard.WavesKeyboardService
 import sh.comfy.waves.keyboard.emoji.EmoteRepository
+import sh.comfy.waves.keyboard.pinyin.PinyinDictionary
+import sh.comfy.waves.keyboard.pinyin.PinyinEngine
 import sh.comfy.waves.ui.theme.WavesTheme
 
 /**
@@ -58,12 +60,14 @@ class KeyboardView(
 ) : FrameLayout(service) {
 
     private val emoteRepo = EmoteRepository(service)
+    private val pinyinDict = PinyinDictionary(service)
+    private val pinyinEngine = PinyinEngine(pinyinDict)
 
     init {
         val composeView = ComposeView(service).apply {
             setContent {
                 WavesTheme {
-                    KeyboardRoot(service, controller, emoteRepo)
+                    KeyboardRoot(service, controller, emoteRepo, pinyinEngine)
                 }
             }
         }
@@ -82,6 +86,7 @@ fun KeyboardRoot(
     service: WavesKeyboardService,
     controller: KeyboardController,
     emoteRepo: EmoteRepository,
+    pinyinEngine: PinyinEngine,
 ) {
     val state by controller.state.collectAsState()
     // Track ripples from key taps for reactive wave effect
@@ -92,7 +97,7 @@ fun KeyboardRoot(
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface),
     ) {
-        // Animated waves behind keys — only on typing panels, not emote grid
+        // Animated waves behind keys — on typing panels (QWERTY, symbols, pinyin)
         if (state.panel != KeyboardController.Panel.EMOTES) {
             // Clean up dead ripples
             LaunchedEffect(ripples) {
@@ -156,6 +161,13 @@ fun KeyboardRoot(
                             emoteRepo.recordUsage(emote.name)
                         },
                         onBack = { controller.switchPanel(KeyboardController.Panel.QWERTY) },
+                    )
+                }
+                KeyboardController.Panel.PINYIN -> {
+                    NinekeyPanel(
+                        service = service,
+                        controller = controller,
+                        pinyinEngine = pinyinEngine,
                     )
                 }
             }
@@ -419,6 +431,9 @@ private fun handleKeyPress(
         }
         KeyLayout.KeyType.EMOTES -> {
             controller.switchPanel(KeyboardController.Panel.EMOTES)
+        }
+        KeyLayout.KeyType.PINYIN -> {
+            controller.switchPanel(KeyboardController.Panel.PINYIN)
         }
     }
 }

@@ -23,6 +23,7 @@ object KeyLayout {
         ALPHA,          // switches back to QWERTY
         SYMBOLS_2,      // switches to symbols page 2
         EMOTES,         // opens emote panel
+        PINYIN,         // switches to 9-key pinyin panel
         COMMA,          // commits comma
         PERIOD,         // commits period
     }
@@ -37,11 +38,12 @@ object KeyLayout {
         ),
         listOf(
             Key("123", KeyType.SYMBOLS, weight = 1.2f),
+            Key("中", KeyType.PINYIN, weight = 1f),
             Key("😀", KeyType.EMOTES, weight = 1f),
             Key(",", KeyType.COMMA),
-            Key(" ", KeyType.SPACE, weight = 4f),
+            Key(" ", KeyType.SPACE, weight = 3.5f),
             Key(".", KeyType.PERIOD),
-            Key("↵", KeyType.ENTER, weight = 1.8f, icon = "enter"),
+            Key("↵", KeyType.ENTER, weight = 1.5f, icon = "enter"),
         ),
     )
 

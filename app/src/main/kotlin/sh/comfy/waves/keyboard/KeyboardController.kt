@@ -21,6 +21,7 @@ class KeyboardController {
         SYMBOLS_1,
         SYMBOLS_2,
         EMOTES,
+        PINYIN,
     }
 
     data class State(
