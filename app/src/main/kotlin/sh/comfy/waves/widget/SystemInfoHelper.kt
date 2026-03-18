@@ -47,14 +47,14 @@ object SystemInfoHelper {
         return buildString {
             appendLine(tag)
             appendLine(separator)
-            appendLine("OS     │ ${info.distro}")
-            appendLine("Kernel │ ${info.kernel}")
-            appendLine("Uptime │ ${info.uptime}")
-            appendLine("Res    │ ${info.resolution}")
-            appendLine("CPU    │ ${info.cpu}")
-            appendLine("Memory │ ${info.memUsed} / ${info.memTotal}")
-            appendLine("Disk   │ ${info.storage}")
-            append("Battery│ ${info.battery}")
+            appendLine("OS      ${info.distro}")
+            appendLine("Kernel  ${info.kernel}")
+            appendLine("Uptime  ${info.uptime}")
+            appendLine("Res     ${info.resolution}")
+            appendLine("CPU     ${info.cpu}")
+            appendLine("Memory  ${info.memUsed} / ${info.memTotal}")
+            appendLine("Disk    ${info.storage}")
+            append("Battery ${info.battery}")
         }
     }
 

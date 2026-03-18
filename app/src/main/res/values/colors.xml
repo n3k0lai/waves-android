@@ -1,6 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Waves palette — deep teal ocean → sandy gold → white foam -->
     <color name="icon_tint">#FF000000</color>
-    <color name="waves_primary">#FF1A237E</color>
-    <color name="waves_surface">#FF0D1117</color>
+
+    <!-- Primary: deep teal ocean -->
+    <color name="waves_primary">#FF00897B</color>
+    <color name="waves_primary_dark">#FF00695C</color>
+    <color name="waves_primary_light">#FF4DB6AC</color>
+    <color name="waves_on_primary">#FFFFFFFF</color>
+
+    <!-- Secondary: sandy gold shoreline -->
+    <color name="waves_secondary">#FFD4A574</color>
+    <color name="waves_secondary_dark">#FFA1785A</color>
+    <color name="waves_on_secondary">#FF1A1A1A</color>
+
+    <!-- Tertiary: white foam -->
+    <color name="waves_tertiary">#FFE0F2F1</color>
+    <color name="waves_on_tertiary">#FF1A1A1A</color>
+
+    <!-- Surface: void black -->
+    <color name="waves_surface">#FF0A0A0A</color>
+    <color name="waves_surface_variant">#FF1A1A1A</color>
+    <color name="waves_on_surface">#FFE0E0E0</color>
+    <color name="waves_on_surface_variant">#FF9E9E9E</color>
+
+    <!-- Background -->
+    <color name="waves_background">#FF050505</color>
+    <color name="waves_on_background">#FFE0E0E0</color>
+
+    <!-- Error -->
+    <color name="waves_error">#FFCF6679</color>
+    <color name="waves_on_error">#FF000000</color>
+
+    <!-- Outline -->
+    <color name="waves_outline">#FF2A2A2A</color>
+    <color name="waves_outline_variant">#FF1E1E1E</color>
+
+    <!-- Ene accent (for agent/AI surfaces) -->
+    <color name="waves_ene_accent">#FF00D4AA</color>
 </resources>

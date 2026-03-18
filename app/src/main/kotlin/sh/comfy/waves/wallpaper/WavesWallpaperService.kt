@@ -47,6 +47,9 @@ class WavesWallpaperService : WallpaperService() {
         private var surfaceWidth = 0
         private var surfaceHeight = 0
 
+        // Foldable support: hinge region to avoid rendering content across
+        private var hingeRect: android.graphics.Rect? = null
+
         // GL state
         private var eglDisplay: EGLDisplay = EGL14.EGL_NO_DISPLAY
         private var eglContext: EGLContext = EGL14.EGL_NO_CONTEXT
@@ -64,6 +67,24 @@ class WavesWallpaperService : WallpaperService() {
                     settings = newSettings
                     // Re-render with new focal point
                     if (frameAvailable) drawFrame()
+                }
+            }
+            // Detect foldable hinge position for fold-aware rendering
+            scope.launch {
+                try {
+                    val windowManager = androidx.window.layout.WindowInfoTracker
+                        .getOrCreate(this@WavesWallpaperService)
+                    windowManager.windowLayoutInfo(this@WavesWallpaperService)
+                        .collectLatest { layoutInfo ->
+                            val foldFeature = layoutInfo.displayFeatures
+                                .filterIsInstance<androidx.window.layout.FoldingFeature>()
+                                .firstOrNull()
+                            hingeRect = foldFeature?.bounds
+                            if (frameAvailable) drawFrame()
+                        }
+                } catch (_: Exception) {
+                    // Not a foldable device or WindowInfoTracker unavailable
+                    hingeRect = null
                 }
             }
         }

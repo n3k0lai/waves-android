@@ -12,9 +12,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:fontFamily="monospace"
-        android:textColor="#FFFFFFFF"
-        android:textSize="12sp"
-        android:lineSpacingMultiplier="1.2"
+        android:textColor="#FFE0E0E0"
+        android:textSize="11sp"
+        android:lineSpacingMultiplier="1.3"
         android:text="" />
 
 </LinearLayout>
