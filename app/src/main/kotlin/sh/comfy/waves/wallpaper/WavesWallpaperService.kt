@@ -1,5 +1,9 @@
 package sh.comfy.waves.wallpaper
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.SurfaceTexture
 import android.opengl.EGL14
 import android.opengl.EGLConfig
@@ -32,6 +36,59 @@ import java.nio.FloatBuffer
 
 class WavesWallpaperService : WallpaperService() {
 
+    companion object {
+        /** Broadcast action to toggle animation from quick settings tile or notification */
+        const val ACTION_TOGGLE_ANIMATION = "sh.comfy.waves.TOGGLE_ANIMATION"
+        const val ACTION_SET_ANIMATION = "sh.comfy.waves.SET_ANIMATION"
+        const val EXTRA_ENABLED = "enabled"
+
+        private val QUAD_VERTICES: FloatBuffer = createFloatBuffer(
+            floatArrayOf(
+                -1f, -1f,
+                1f, -1f,
+                -1f, 1f,
+                1f, 1f,
+            )
+        )
+
+        private val DEFAULT_TEX_COORDS = floatArrayOf(
+            0f, 0f,
+            1f, 0f,
+            0f, 1f,
+            1f, 1f,
+        )
+
+        private const val VERTEX_SHADER = """
+            attribute vec4 aPosition;
+            attribute vec2 aTexCoord;
+            varying vec2 vTexCoord;
+            void main() {
+                gl_Position = aPosition;
+                vTexCoord = aTexCoord;
+            }
+        """
+
+        private const val FRAGMENT_SHADER = """
+            #extension GL_OES_EGL_image_external : require
+            precision mediump float;
+            varying vec2 vTexCoord;
+            uniform samplerExternalOES uTexture;
+            void main() {
+                gl_FragColor = texture2D(uTexture, vTexCoord);
+            }
+        """
+
+        private fun createFloatBuffer(data: FloatArray): FloatBuffer {
+            return ByteBuffer.allocateDirect(data.size * 4)
+                .order(ByteOrder.nativeOrder())
+                .asFloatBuffer()
+                .apply {
+                    put(data)
+                    position(0)
+                }
+        }
+    }
+
     override fun onCreateEngine(): Engine = WavesEngine()
 
     inner class WavesEngine : Engine() {
@@ -47,6 +104,9 @@ class WavesWallpaperService : WallpaperService() {
         private var surfaceWidth = 0
         private var surfaceHeight = 0
 
+        // Animation toggle (controlled by quick settings tile)
+        private var animationEnabled = true
+
         // Foldable support: hinge region to avoid rendering content across
         private var hingeRect: android.graphics.Rect? = null
 
@@ -60,8 +120,41 @@ class WavesWallpaperService : WallpaperService() {
         private var videoSurface: Surface? = null
         private var frameAvailable = false
 
+        private val toggleReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                when (intent.action) {
+                    ACTION_TOGGLE_ANIMATION -> {
+                        animationEnabled = !animationEnabled
+                        applyAnimationState()
+                    }
+                    ACTION_SET_ANIMATION -> {
+                        animationEnabled = intent.getBooleanExtra(EXTRA_ENABLED, true)
+                        applyAnimationState()
+                    }
+                }
+            }
+        }
+
+        private fun applyAnimationState() {
+            if (animationEnabled) {
+                player?.play()
+            } else {
+                player?.pause()
+                // Draw one last frame so it freezes on current position (not black)
+                if (frameAvailable) drawFrame()
+            }
+        }
+
         override fun onCreate(surfaceHolder: SurfaceHolder) {
             super.onCreate(surfaceHolder)
+
+            // Register for animation toggle broadcasts
+            val filter = IntentFilter().apply {
+                addAction(ACTION_TOGGLE_ANIMATION)
+                addAction(ACTION_SET_ANIMATION)
+            }
+            this@WavesWallpaperService.registerReceiver(toggleReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+
             scope.launch {
                 settingsRepo.wallpaperSettings.collectLatest { newSettings ->
                     settings = newSettings
@@ -117,7 +210,7 @@ class WavesWallpaperService : WallpaperService() {
 
         override fun onVisibilityChanged(visible: Boolean) {
             super.onVisibilityChanged(visible)
-            if (visible) {
+            if (visible && animationEnabled) {
                 player?.play()
             } else {
                 player?.pause()
@@ -126,6 +219,9 @@ class WavesWallpaperService : WallpaperService() {
 
         override fun onDestroy() {
             super.onDestroy()
+            try {
+                this@WavesWallpaperService.unregisterReceiver(toggleReceiver)
+            } catch (_: Exception) {}
             releasePlayer()
             releaseGl()
             scope.cancel()
@@ -264,13 +360,37 @@ class WavesWallpaperService : WallpaperService() {
                 frameAvailable = false
             }
 
-            GLES20.glViewport(0, 0, surfaceWidth, surfaceHeight)
-            GLES20.glClearColor(0f, 0f, 0f, 1f)
-            GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
+            // Foldable hinge-aware rendering
+            val hinge = hingeRect
+            if (hinge != null && hinge.width() > 0 && surfaceWidth > 0) {
+                // Render two viewports: left of hinge, right of hinge
+                // Left panel
+                GLES20.glViewport(0, 0, hinge.left, surfaceHeight)
+                renderQuad()
+                // Right panel
+                GLES20.glViewport(hinge.right, 0, surfaceWidth - hinge.right, surfaceHeight)
+                renderQuad()
+                // Black out the hinge area
+                GLES20.glEnable(GLES20.GL_SCISSOR_TEST)
+                GLES20.glScissor(hinge.left, 0, hinge.width(), surfaceHeight)
+                GLES20.glViewport(0, 0, surfaceWidth, surfaceHeight)
+                GLES20.glClearColor(0f, 0f, 0f, 1f)
+                GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
+                GLES20.glDisable(GLES20.GL_SCISSOR_TEST)
+            } else {
+                // Standard single-screen rendering
+                GLES20.glViewport(0, 0, surfaceWidth, surfaceHeight)
+                GLES20.glClearColor(0f, 0f, 0f, 1f)
+                GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
+                renderQuad()
+            }
 
+            EGL14.eglSwapBuffers(eglDisplay, eglSurface)
+        }
+
+        private fun renderQuad() {
             GLES20.glUseProgram(glProgram)
 
-            // Calculate texture coordinates for focal-point-based crop
             val texCoords = calculateCropTexCoords()
             val texCoordBuffer = createFloatBuffer(texCoords)
 
@@ -291,16 +411,10 @@ class WavesWallpaperService : WallpaperService() {
 
             GLES20.glDisableVertexAttribArray(positionHandle)
             GLES20.glDisableVertexAttribArray(texCoordHandle)
-
-            EGL14.eglSwapBuffers(eglDisplay, eglSurface)
         }
 
         /**
          * Computes texture coordinates for a center-crop that respects the focal point.
-         *
-         * The video is scaled to fill the surface (no letterboxing), and the
-         * visible region is positioned so that the user's focal point determines
-         * which part of the video is shown.
          */
         private fun calculateCropTexCoords(): FloatArray {
             if (videoWidth == 0 || videoHeight == 0 || surfaceWidth == 0 || surfaceHeight == 0) {
@@ -314,20 +428,15 @@ class WavesWallpaperService : WallpaperService() {
             var texHeight = 1f
 
             if (videoAspect > surfaceAspect) {
-                // Video is wider — crop horizontally
                 texWidth = surfaceAspect / videoAspect
             } else {
-                // Video is taller — crop vertically
                 texHeight = videoAspect / surfaceAspect
             }
 
-            // Apply focal point offset
-            // focalPointX/Y range from 0..1, where 0.5 is centered
             val maxOffsetX = 1f - texWidth
             val maxOffsetY = 1f - texHeight
 
             val offsetX = maxOffsetX * settings.focalPointX
-            // Flip Y because texture coords have origin at bottom-left
             val offsetY = maxOffsetY * (1f - settings.focalPointY)
 
             val left = offsetX
@@ -335,7 +444,6 @@ class WavesWallpaperService : WallpaperService() {
             val bottom = offsetY
             val top = offsetY + texHeight
 
-            // Triangle strip order: bottom-left, bottom-right, top-left, top-right
             return floatArrayOf(
                 left, bottom,
                 right, bottom,
@@ -366,7 +474,7 @@ class WavesWallpaperService : WallpaperService() {
 
                 videoSurface?.let { setVideoSurface(it) }
                 prepare()
-                play()
+                if (animationEnabled) play()
             }
 
             player = exoPlayer
@@ -381,53 +489,5 @@ class WavesWallpaperService : WallpaperService() {
         }
 
         // endregion
-    }
-
-    companion object {
-        private val QUAD_VERTICES: FloatBuffer = createFloatBuffer(
-            floatArrayOf(
-                -1f, -1f,
-                1f, -1f,
-                -1f, 1f,
-                1f, 1f,
-            )
-        )
-
-        private val DEFAULT_TEX_COORDS = floatArrayOf(
-            0f, 0f,
-            1f, 0f,
-            0f, 1f,
-            1f, 1f,
-        )
-
-        private const val VERTEX_SHADER = """
-            attribute vec4 aPosition;
-            attribute vec2 aTexCoord;
-            varying vec2 vTexCoord;
-            void main() {
-                gl_Position = aPosition;
-                vTexCoord = aTexCoord;
-            }
-        """
-
-        private const val FRAGMENT_SHADER = """
-            #extension GL_OES_EGL_image_external : require
-            precision mediump float;
-            varying vec2 vTexCoord;
-            uniform samplerExternalOES uTexture;
-            void main() {
-                gl_FragColor = texture2D(uTexture, vTexCoord);
-            }
-        """
-
-        private fun createFloatBuffer(data: FloatArray): FloatBuffer {
-            return ByteBuffer.allocateDirect(data.size * 4)
-                .order(ByteOrder.nativeOrder())
-                .asFloatBuffer()
-                .apply {
-                    put(data)
-                    position(0)
-                }
-        }
     }
 }

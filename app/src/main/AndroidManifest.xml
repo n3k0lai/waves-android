@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Emote loading from emotes.comfy.sh -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:name=".WavesApp"
         android:allowBackup="true"
@@ -85,6 +88,35 @@
             <meta-data
                 android:name="android.service.wallpaper"
                 android:resource="@xml/wallpaper" />
+        </service>
+
+        <!-- Quick Settings Tile: toggle wallpaper animation -->
+        <service
+            android:name=".tile.WavesAnimationTile"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_waves"
+            android:label="@string/tile_label"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <!-- Keyboard IME Service -->
+        <service
+            android:name=".keyboard.WavesKeyboardService"
+            android:exported="true"
+            android:label="@string/keyboard_label"
+            android:permission="android.permission.BIND_INPUT_METHOD">
+
+            <intent-filter>
+                <action android:name="android.view.InputMethod" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.view.im"
+                android:resource="@xml/keyboard_method" />
         </service>
 
         <!-- Screenfetch Widget -->

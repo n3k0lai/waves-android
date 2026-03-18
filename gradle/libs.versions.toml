@@ -28,8 +28,14 @@ androidx-compose-material-icons-extended = { group = "androidx.compose.material"
 androidx-media3-exoplayer = { group = "androidx.media3", name = "media3-exoplayer", version.ref = "media3" }
 androidx-media3-ui = { group = "androidx.media3", name = "media3-ui", version.ref = "media3" }
 
+# Lifecycle (needed for Compose in IME service)
+androidx-lifecycle-process = { group = "androidx.lifecycle", name = "lifecycle-process", version.ref = "lifecycleRuntime" }
+
 # Window Manager (foldable support)
 androidx-window = { group = "androidx.window", name = "window", version.ref = "windowManager" }
+
+# Coil (image loading for emotes)
+coil-compose = { group = "io.coil-kt", name = "coil-compose", version = "2.7.0" }
 
 # DataStore
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastorePreferences" }

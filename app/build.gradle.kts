@@ -60,9 +60,15 @@ dependencies {
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.ui)
 
+    // Lifecycle (for Compose in IME)
+    implementation(libs.androidx.lifecycle.process)
+
     // Window Manager (foldable support)
     implementation(libs.androidx.window)
 
     // DataStore
     implementation(libs.androidx.datastore.preferences)
+
+    // Coil (emote image loading)
+    implementation(libs.coil.compose)
 }
