@@ -75,6 +75,16 @@ fun SettingsScreen(
             }
 
             item {
+                KeyboardSection(
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
+            item {
+                HorizontalDivider()
+            }
+
+            item {
                 WidgetSection(
                     transparency = transparency,
                     onTransparencyChanged = onWidgetTransparencyChanged,
