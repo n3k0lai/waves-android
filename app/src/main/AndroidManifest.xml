@@ -3,6 +3,10 @@
 
     <!-- Emote loading from emotes.comfy.sh -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Widget hosting -->
+    <uses-permission android:name="android.permission.BIND_APPWIDGET" />
+    <!-- Notifications expand (gesture) -->
+    <uses-permission android:name="android.permission.EXPAND_STATUS_BAR" />
 
     <application
         android:name=".WavesApp"
@@ -70,6 +74,24 @@
             <!-- GO Launcher -->
             <intent-filter>
                 <action android:name="com.gau.go.launcherex.theme" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <!-- Launcher Home Screen -->
+        <activity
+            android:name=".launcher.LauncherActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:stateNotNeeded="true"
+            android:clearTaskOnLaunch="true"
+            android:resumeWhilePausing="true"
+            android:theme="@style/Theme.Waves.Launcher"
+            android:configChanges="keyboard|keyboardHidden|mcc|mnc|navigation|orientation|screenLayout|screenSize|smallestScreenSize">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.HOME" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>

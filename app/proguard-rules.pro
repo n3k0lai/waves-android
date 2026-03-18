@@ -21,3 +21,16 @@
 
 # Keyboard IME Service
 -keep class sh.comfy.waves.keyboard.WavesKeyboardService { *; }
+
+# Launcher
+-keep class sh.comfy.waves.launcher.LauncherActivity { *; }
+-keep class sh.comfy.waves.launcher.data.** { *; }
+
+# Kotlinx Serialization
+-keepattributes *Annotation*, InnerClasses
+-dontnote kotlinx.serialization.AnnotationsKt
+-keepclassmembers class kotlinx.serialization.json.** { *** Companion; }
+-keepclasseswithmembers class kotlinx.serialization.json.** { kotlinx.serialization.KSerializer serializer(...); }
+-keep,includedescriptorclasses class sh.comfy.waves.launcher.data.**$$serializer { *; }
+-keepclassmembers class sh.comfy.waves.launcher.data.** { *** Companion; }
+-keepclasseswithmembers class sh.comfy.waves.launcher.data.** { kotlinx.serialization.KSerializer serializer(...); }
