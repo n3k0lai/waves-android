@@ -44,6 +44,7 @@ import sh.comfy.waves.launcher.folder.FolderPopup
 import sh.comfy.waves.launcher.gesture.GestureHandler
 import sh.comfy.waves.launcher.home.DesktopGrid
 import sh.comfy.waves.launcher.home.PageIndicator
+import sh.comfy.waves.launcher.home.ScrollEffects
 import sh.comfy.waves.launcher.search.SearchOverlay
 import sh.comfy.waves.ui.theme.WavesTheme
 
@@ -117,6 +118,7 @@ fun LauncherScreen(
     val swipeUpAction by settings.swipeUpAction.collectAsState(initial = "drawer")
     val doubleTapAction by settings.doubleTapAction.collectAsState(initial = "lock")
     val swipeDownAction by settings.swipeDownAction.collectAsState(initial = "notifications")
+    val scrollEffect by settings.scrollEffect.collectAsState(initial = "slide")
 
     // Load apps
     var allApps by remember { mutableStateOf<List<AppInfo>>(emptyList()) }
@@ -207,34 +209,42 @@ fun LauncherScreen(
                     .fillMaxWidth()
                     .weight(1f),
             ) { page ->
+                val pageOffset = (pagerState.currentPage - page) +
+                    pagerState.currentPageOffsetFraction
                 val pageItems = layout.pages.getOrNull(page)?.items ?: emptyList()
-                DesktopGrid(
-                    items = pageItems,
-                    columns = desktopCols,
-                    rows = desktopRows,
-                    iconScale = iconScale,
-                    labelSize = labelSize,
-                    showLabels = showLabels,
-                    resolveApp = resolveApp,
-                    onItemClick = { item ->
-                        when (item) {
-                            is DesktopItem.AppShortcut -> {
-                                val app = resolveApp(item.packageName, item.activityName)
-                                app?.let { context.startActivity(it.launchIntent) }
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .then(ScrollEffects.applyEffect(scrollEffect, pageOffset)),
+                ) {
+                    DesktopGrid(
+                        items = pageItems,
+                        columns = desktopCols,
+                        rows = desktopRows,
+                        iconScale = iconScale,
+                        labelSize = labelSize,
+                        showLabels = showLabels,
+                        resolveApp = resolveApp,
+                        onItemClick = { item ->
+                            when (item) {
+                                is DesktopItem.AppShortcut -> {
+                                    val app = resolveApp(item.packageName, item.activityName)
+                                    app?.let { context.startActivity(it.launchIntent) }
+                                }
+                                is DesktopItem.FolderItem -> {
+                                    openFolder = item
+                                }
+                                is DesktopItem.WidgetItem -> { /* widgets handle their own clicks */ }
                             }
-                            is DesktopItem.FolderItem -> {
-                                openFolder = item
-                            }
-                            is DesktopItem.WidgetItem -> { /* widgets handle their own clicks */ }
-                        }
-                    },
-                    onItemLongClick = { item ->
-                        // TODO: drag-to-reposition / remove / edit
-                    },
-                    onEmptyCellClick = { col, row ->
-                        // TODO: add item picker (app, widget, folder)
-                    },
-                )
+                        },
+                        onItemLongClick = { item ->
+                            // TODO: drag-to-reposition / remove / edit
+                        },
+                        onEmptyCellClick = { col, row ->
+                            // TODO: add item picker (app, widget, folder)
+                        },
+                    )
+                }
             }
 
             // Page indicator

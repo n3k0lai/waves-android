@@ -52,6 +52,16 @@ fun SettingsScreen(
                 .padding(horizontal = 16.dp),
         ) {
             item {
+                LauncherSection(
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
+            item {
+                HorizontalDivider()
+            }
+
+            item {
                 WallpaperSection(
                     focalX = settings.focalPointX,
                     focalY = settings.focalPointY,
