@@ -71,6 +71,16 @@ class KeyboardController {
         }
     }
 
+    /**
+     * Auto-capitalize: set shift to SINGLE for the next character.
+     * Called after sentence-ending punctuation or newline.
+     */
+    fun autoShiftSingle() {
+        if (_state.value.shiftState == ShiftState.OFF) {
+            _state.value = _state.value.copy(shiftState = ShiftState.SINGLE)
+        }
+    }
+
     fun switchPanel(panel: Panel) {
         _state.value = _state.value.copy(panel = panel)
     }

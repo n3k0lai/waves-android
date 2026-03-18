@@ -14,10 +14,12 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -26,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import sh.comfy.waves.keyboard.core.KeyboardPreferences
 
 @Composable
 fun KeyboardSection(
@@ -33,6 +36,7 @@ fun KeyboardSection(
 ) {
     val context = LocalContext.current
     val isEnabled = remember { isKeyboardEnabled(context) }
+    val prefs = remember { KeyboardPreferences(context) }
 
     Column(
         modifier = modifier,
@@ -68,7 +72,6 @@ fun KeyboardSection(
         ) {
             Button(
                 onClick = {
-                    // Open system keyboard settings to enable Waves
                     context.startActivity(
                         Intent(Settings.ACTION_INPUT_METHOD_SETTINGS).apply {
                             flags = Intent.FLAG_ACTIVITY_NEW_TASK
@@ -82,7 +85,6 @@ fun KeyboardSection(
 
             OutlinedButton(
                 onClick = {
-                    // Open input method picker to switch to Waves
                     val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
                     imm.showInputMethodPicker()
                 },
@@ -92,25 +94,64 @@ fun KeyboardSection(
             }
         }
 
-        // Keyboard settings
         Text(
-            text = "Settings",
+            text = "Input",
             style = MaterialTheme.typography.titleMedium,
         )
 
-        KeyboardToggle("Haptic feedback", defaultValue = true)
-        KeyboardToggle("Double-space period", defaultValue = true)
-        KeyboardToggle("Auto-capitalize", defaultValue = true)
-        KeyboardToggle("Sound on keypress", defaultValue = false)
+        PrefToggle("Haptic feedback", prefs.hapticEnabled) { prefs.hapticEnabled = it }
+        PrefToggle("Key sounds", prefs.soundEnabled) { prefs.soundEnabled = it }
+        PrefToggle("Double-space period", prefs.doubleTapPeriod) { prefs.doubleTapPeriod = it }
+        PrefToggle("Auto-capitalize", prefs.autoCapitalize) { prefs.autoCapitalize = it }
+
+        Text(
+            text = "Appearance",
+            style = MaterialTheme.typography.titleMedium,
+        )
+
+        // Waves background intensity slider
+        var wavesIntensity by remember { mutableFloatStateOf(prefs.wavesIntensity) }
+        Text(
+            text = "Wave intensity",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Slider(
+            value = wavesIntensity,
+            onValueChange = {
+                wavesIntensity = it
+                prefs.wavesIntensity = it
+            },
+            valueRange = 0f..1f,
+            steps = 9,
+        )
+
+        // Key height slider
+        var keyHeight by remember { mutableFloatStateOf(prefs.keyHeight.toFloat()) }
+        Text(
+            text = "Key height: ${keyHeight.toInt()}dp",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Slider(
+            value = keyHeight,
+            onValueChange = {
+                keyHeight = it
+                prefs.keyHeight = it.toInt()
+            },
+            valueRange = 36f..60f,
+            steps = 7,
+        )
     }
 }
 
 @Composable
-fun KeyboardToggle(
+fun PrefToggle(
     label: String,
-    defaultValue: Boolean,
+    value: Boolean,
+    onChanged: (Boolean) -> Unit,
 ) {
-    var enabled by remember { mutableStateOf(defaultValue) }
+    var checked by remember { mutableStateOf(value) }
 
     Row(
         modifier = Modifier
@@ -125,8 +166,11 @@ fun KeyboardToggle(
             color = MaterialTheme.colorScheme.onSurface,
         )
         Switch(
-            checked = enabled,
-            onCheckedChange = { enabled = it },
+            checked = checked,
+            onCheckedChange = {
+                checked = it
+                onChanged(it)
+            },
         )
     }
 }

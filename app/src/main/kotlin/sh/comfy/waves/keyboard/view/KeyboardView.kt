@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.ComposeView
@@ -109,7 +110,7 @@ fun KeyboardRoot(
 
             WavesBackground(
                 enabled = true,
-                intensity = 1f,
+                intensity = service.prefs.wavesIntensity,
                 ripples = ripples,
             )
         }
@@ -157,8 +158,20 @@ fun KeyboardRoot(
                     EmotePanel(
                         emoteRepo = emoteRepo,
                         onEmoteSelected = { emote ->
+                            // Commit emote name as text
                             service.commitText(emote.name)
                             emoteRepo.recordUsage(emote.name)
+                            // Also copy image URL to clipboard for rich paste
+                            val clipboard = service.getSystemService(
+                                android.content.Context.CLIPBOARD_SERVICE
+                            ) as? android.content.ClipboardManager
+                            clipboard?.setPrimaryClip(
+                                android.content.ClipData.newUri(
+                                    service.contentResolver,
+                                    emote.name,
+                                    android.net.Uri.parse(emote.url),
+                                )
+                            )
                         },
                         onBack = { controller.switchPanel(KeyboardController.Panel.QWERTY) },
                     )
@@ -287,11 +300,13 @@ fun KeyButton(
                         onTap = { offset ->
                             isPressed = true
                             // Haptic feedback
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                            } else {
-                                @Suppress("DEPRECATION")
-                                view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+                            if (service?.prefs?.hapticEnabled != false) {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                } else {
+                                    @Suppress("DEPRECATION")
+                                    view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+                                }
                             }
                             // Trigger wave ripple at tap's global X position
                             val globalTapX = keyGlobalX + offset.x
@@ -300,8 +315,9 @@ fun KeyButton(
                         },
                         onLongPress = {
                             if (hasAlternates || onLongPress != null) {
-                                // Heavier haptic for long press
-                                view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+                                if (service?.prefs?.hapticEnabled != false) {
+                                    view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+                                }
                                 if (hasAlternates) {
                                     showPopup = true
                                 }
@@ -309,6 +325,18 @@ fun KeyButton(
                             }
                         },
                     )
+                }
+                // Stop backspace repeat when finger lifts anywhere
+                .pointerInput(key.type) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            if (event.changes.all { !it.pressed }) {
+                                // All pointers lifted — stop backspace repeat
+                                service?.backspaceHandler?.stopRepeating()
+                            }
+                        }
+                    }
                 },
             contentAlignment = Alignment.Center,
         ) {
@@ -390,15 +418,26 @@ private fun handleKeyPress(
             val text = if (isUpperCase) key.label.uppercase() else key.label
             service.commitText(text)
             controller.onKeyTapped()
+            // Auto-capitalize after sentence-ending punctuation
+            if (service.shouldAutoCapitalize() &&
+                controller.state.value.shiftState == KeyboardController.ShiftState.OFF
+            ) {
+                controller.autoShiftSingle()
+            }
         }
         KeyLayout.KeyType.SPACE -> {
-            service.commitText(" ")
+            // Use TextProcessor for double-tap-to-period
+            service.handleSpace()
         }
         KeyLayout.KeyType.COMMA -> {
             service.commitText(",")
         }
         KeyLayout.KeyType.PERIOD -> {
             service.commitText(".")
+            // Auto-capitalize after period
+            if (service.shouldAutoCapitalize()) {
+                controller.autoShiftSingle()
+            }
         }
         KeyLayout.KeyType.BACKSPACE -> {
             service.deleteBackward()
@@ -416,6 +455,10 @@ private fun handleKeyPress(
                     android.view.KeyEvent.KEYCODE_ENTER
                 )
             )
+            // Auto-capitalize after enter
+            if (service.shouldAutoCapitalize()) {
+                controller.autoShiftSingle()
+            }
         }
         KeyLayout.KeyType.SHIFT -> {
             controller.toggleShift()
@@ -445,16 +488,10 @@ private fun handleLongPress(
 ) {
     when (key.type) {
         KeyLayout.KeyType.BACKSPACE -> {
-            // Long press backspace: delete word
-            val textBefore = service.getTextBeforeCursor(50)
-            if (textBefore != null) {
-                val lastSpace = textBefore.lastIndexOf(' ')
-                val deleteCount = if (lastSpace >= 0) textBefore.length - lastSpace else textBefore.length
-                service.deleteBackward(deleteCount)
-            }
+            // Start continuous backspace deletion
+            service.backspaceHandler.startRepeating()
         }
         KeyLayout.KeyType.SPACE -> {
-            // Long press space: insert period + space (double-tap space shortcut)
             service.commitText(". ")
         }
         KeyLayout.KeyType.COMMA -> {
