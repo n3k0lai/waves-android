@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -30,8 +29,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
@@ -84,48 +84,80 @@ fun KeyboardRoot(
     emoteRepo: EmoteRepository,
 ) {
     val state by controller.state.collectAsState()
+    // Track ripples from key taps for reactive wave effect
+    var ripples by remember { mutableStateOf(listOf<WaveRipple>()) }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(horizontal = 3.dp, vertical = 6.dp),
+            .background(MaterialTheme.colorScheme.surface),
     ) {
-        when (state.panel) {
-            KeyboardController.Panel.QWERTY -> {
-                KeyRows(
-                    rows = KeyLayout.qwertyRows,
-                    service = service,
-                    controller = controller,
-                    isUpperCase = controller.isUpperCase(),
-                )
+        // Animated waves behind keys — only on typing panels, not emote grid
+        if (state.panel != KeyboardController.Panel.EMOTES) {
+            // Clean up dead ripples
+            LaunchedEffect(ripples) {
+                if (ripples.any { !it.isAlive }) {
+                    delay(50)
+                    ripples = ripples.filter { it.isAlive }
+                }
             }
-            KeyboardController.Panel.SYMBOLS_1 -> {
-                KeyRows(
-                    rows = KeyLayout.symbols1Rows,
-                    service = service,
-                    controller = controller,
-                    isUpperCase = false,
-                )
-            }
-            KeyboardController.Panel.SYMBOLS_2 -> {
-                KeyRows(
-                    rows = KeyLayout.symbols2Rows,
-                    service = service,
-                    controller = controller,
-                    isUpperCase = false,
-                )
-            }
-            KeyboardController.Panel.EMOTES -> {
-                EmotePanel(
-                    emoteRepo = emoteRepo,
-                    onEmoteSelected = { emote ->
-                        // Commit emote name as text
-                        service.commitText(emote.name)
-                        emoteRepo.recordUsage(emote.name)
-                    },
-                    onBack = { controller.switchPanel(KeyboardController.Panel.QWERTY) },
-                )
+
+            WavesBackground(
+                enabled = true,
+                intensity = 1f,
+                ripples = ripples,
+            )
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 3.dp, vertical = 6.dp),
+        ) {
+            when (state.panel) {
+                KeyboardController.Panel.QWERTY -> {
+                    KeyRows(
+                        rows = KeyLayout.qwertyRows,
+                        service = service,
+                        controller = controller,
+                        isUpperCase = controller.isUpperCase(),
+                        onRipple = { normalizedX ->
+                            ripples = ripples + WaveRipple(x = normalizedX)
+                        },
+                    )
+                }
+                KeyboardController.Panel.SYMBOLS_1 -> {
+                    KeyRows(
+                        rows = KeyLayout.symbols1Rows,
+                        service = service,
+                        controller = controller,
+                        isUpperCase = false,
+                        onRipple = { normalizedX ->
+                            ripples = ripples + WaveRipple(x = normalizedX)
+                        },
+                    )
+                }
+                KeyboardController.Panel.SYMBOLS_2 -> {
+                    KeyRows(
+                        rows = KeyLayout.symbols2Rows,
+                        service = service,
+                        controller = controller,
+                        isUpperCase = false,
+                        onRipple = { normalizedX ->
+                            ripples = ripples + WaveRipple(x = normalizedX)
+                        },
+                    )
+                }
+                KeyboardController.Panel.EMOTES -> {
+                    EmotePanel(
+                        emoteRepo = emoteRepo,
+                        onEmoteSelected = { emote ->
+                            service.commitText(emote.name)
+                            emoteRepo.recordUsage(emote.name)
+                        },
+                        onBack = { controller.switchPanel(KeyboardController.Panel.QWERTY) },
+                    )
+                }
             }
         }
     }
@@ -137,6 +169,7 @@ fun KeyRows(
     service: WavesKeyboardService,
     controller: KeyboardController,
     isUpperCase: Boolean,
+    onRipple: ((Float) -> Unit)? = null,
 ) {
     rows.forEach { row ->
         Row(
@@ -156,6 +189,7 @@ fun KeyRows(
                     onLongPress = {
                         handleLongPress(key, service, isUpperCase)
                     },
+                    onRipple = onRipple,
                 )
             }
         }
@@ -170,10 +204,14 @@ fun KeyButton(
     service: WavesKeyboardService? = null,
     onClick: () -> Unit,
     onLongPress: (() -> Unit)? = null,
+    onRipple: ((Float) -> Unit)? = null,
 ) {
     val view = LocalView.current
     var isPressed by remember { mutableStateOf(false) }
     var showPopup by remember { mutableStateOf(false) }
+    var keyGlobalX by remember { mutableStateOf(0f) }
+    var keyWidth by remember { mutableStateOf(0f) }
+    val rootWidth = view.width.toFloat().coerceAtLeast(1f)
 
     // Key press scale animation
     val scale by animateFloatAsState(
@@ -190,13 +228,14 @@ fun KeyButton(
         }
     }
 
+    // Keys are semi-transparent so animated waves show through
     val bgColor = when (key.type) {
         KeyLayout.KeyType.CHARACTER,
         KeyLayout.KeyType.COMMA,
-        KeyLayout.KeyType.PERIOD -> MaterialTheme.colorScheme.surfaceVariant
-        KeyLayout.KeyType.SPACE -> MaterialTheme.colorScheme.surfaceVariant
-        KeyLayout.KeyType.ENTER -> MaterialTheme.colorScheme.primary
-        else -> MaterialTheme.colorScheme.outline
+        KeyLayout.KeyType.PERIOD -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.75f)
+        KeyLayout.KeyType.SPACE -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f)
+        KeyLayout.KeyType.ENTER -> MaterialTheme.colorScheme.primary.copy(alpha = 0.85f)
+        else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.7f)
     }
 
     val textColor = when (key.type) {
@@ -227,9 +266,13 @@ fun KeyButton(
                 .scale(scale)
                 .clip(RoundedCornerShape(6.dp))
                 .background(bgColor)
+                .onGloballyPositioned { coords ->
+                    keyGlobalX = coords.positionInRoot().x
+                    keyWidth = coords.size.width.toFloat()
+                }
                 .pointerInput(key) {
                     detectTapGestures(
-                        onTap = {
+                        onTap = { offset ->
                             isPressed = true
                             // Haptic feedback
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -238,6 +281,9 @@ fun KeyButton(
                                 @Suppress("DEPRECATION")
                                 view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
                             }
+                            // Trigger wave ripple at tap's global X position
+                            val globalTapX = keyGlobalX + offset.x
+                            onRipple?.invoke((globalTapX / rootWidth).coerceIn(0f, 1f))
                             onClick()
                         },
                         onLongPress = {
