@@ -104,6 +104,10 @@ class LauncherSettings(private val context: Context) {
         context.launcherDataStore.edit { it[SEARCH_BAR] = enabled }
     }
 
+    suspend fun setPageCount(count: Int) {
+        context.launcherDataStore.edit { it[DESKTOP_PAGES] = count.coerceAtLeast(1) }
+    }
+
     companion object {
         private val DESKTOP_COLS = intPreferencesKey("desktop_cols")
         private val DESKTOP_ROWS = intPreferencesKey("desktop_rows")

@@ -3,6 +3,8 @@
 
     <!-- Emote loading from emotes.comfy.sh -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Required on API 30+ to see all installed apps in launcher/drawer -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
     <!-- Widget hosting -->
     <uses-permission android:name="android.permission.BIND_APPWIDGET" />
     <!-- Notifications expand (gesture) -->

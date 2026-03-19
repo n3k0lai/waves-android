@@ -6,9 +6,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -66,14 +65,15 @@ fun IconSection(
                 )
             }
         } else {
-            // Icon preview grid — icons are tinted with Material You primary color
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 56.dp),
+            // Icon preview — use FlowRow instead of LazyVerticalGrid
+            // (LazyVerticalGrid can't be nested inside LazyColumn without fixed height)
+            @OptIn(ExperimentalLayoutApi::class)
+            FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                items(iconResIds) { resId ->
+                iconResIds.forEach { resId ->
                     Icon(
                         painter = painterResource(resId),
                         contentDescription = null,

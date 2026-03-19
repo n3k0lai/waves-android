@@ -1,5 +1,6 @@
 package sh.comfy.waves.launcher
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -43,6 +44,7 @@ import sh.comfy.waves.launcher.drawer.AppDrawer
 import sh.comfy.waves.launcher.folder.FolderPopup
 import sh.comfy.waves.launcher.gesture.GestureHandler
 import sh.comfy.waves.launcher.home.DesktopGrid
+import sh.comfy.waves.launcher.home.DesktopMenu
 import sh.comfy.waves.launcher.home.PageIndicator
 import sh.comfy.waves.launcher.home.ScrollEffects
 import sh.comfy.waves.launcher.search.SearchOverlay
@@ -60,6 +62,7 @@ class LauncherActivity : ComponentActivity(), GestureHandler.GestureCallbacks {
     private val settings by lazy { LauncherSettings(this) }
     private var showDrawer by mutableStateOf(false)
     private var showSearch by mutableStateOf(false)
+    private var showDesktopMenu by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -71,12 +74,22 @@ class LauncherActivity : ComponentActivity(), GestureHandler.GestureCallbacks {
                     settings = settings,
                     showDrawer = showDrawer,
                     showSearch = showSearch,
+                    showDesktopMenu = showDesktopMenu,
                     callbacks = this@LauncherActivity,
                     onDrawerDismiss = { showDrawer = false },
                     onSearchDismiss = { showSearch = false },
+                    onDesktopMenuToggle = { showDesktopMenu = it },
                 )
             }
         }
+    }
+
+    // Home key pressed while already home — close any open overlays
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        showDrawer = false
+        showSearch = false
+        showDesktopMenu = false
     }
 
     override fun onOpenDrawer() { showDrawer = true }
@@ -95,9 +108,11 @@ fun LauncherScreen(
     settings: LauncherSettings,
     showDrawer: Boolean,
     showSearch: Boolean,
+    showDesktopMenu: Boolean,
     callbacks: GestureHandler.GestureCallbacks,
     onDrawerDismiss: () -> Unit,
     onSearchDismiss: () -> Unit,
+    onDesktopMenuToggle: (Boolean) -> Unit,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -149,13 +164,18 @@ fun LauncherScreen(
 
     // Pager state
     val pagerState = rememberPagerState(
-        initialPage = pageCount / 2,
-        pageCount = { pageCount },
+        initialPage = currentPageCount / 2,
+        pageCount = { currentPageCount },
     )
 
-    // Handle back — close drawer/search/folder
-    BackHandler(enabled = showDrawer || showSearch || openFolder != null) {
+    // Dynamic page count
+    var currentPageCount by remember { mutableStateOf(pageCount) }
+    LaunchedEffect(pageCount) { currentPageCount = pageCount }
+
+    // Handle back — close drawer/search/folder/menu
+    BackHandler(enabled = showDrawer || showSearch || openFolder != null || showDesktopMenu) {
         when {
+            showDesktopMenu -> onDesktopMenuToggle(false)
             showDrawer -> onDrawerDismiss()
             showSearch -> onSearchDismiss()
             openFolder != null -> openFolder = null
@@ -175,6 +195,9 @@ fun LauncherScreen(
                             GestureHandler.resolveAction(doubleTapAction),
                             callbacks,
                         )
+                    },
+                    onLongPress = {
+                        onDesktopMenuToggle(true)
                     },
                 )
             }
@@ -314,5 +337,22 @@ fun LauncherScreen(
                 onDismiss = { openFolder = null },
             )
         }
+
+        // Desktop long-press menu
+        DesktopMenu(
+            visible = showDesktopMenu,
+            pageCount = currentPageCount,
+            onDismiss = { onDesktopMenuToggle(false) },
+            onAddPage = {
+                currentPageCount++
+                scope.launch { settings.setPageCount(currentPageCount) }
+            },
+            onRemovePage = {
+                if (currentPageCount > 1) {
+                    currentPageCount--
+                    scope.launch { settings.setPageCount(currentPageCount) }
+                }
+            },
+        )
     }
 }
