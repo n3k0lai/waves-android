@@ -3,6 +3,8 @@ package sh.comfy.waves.keyboard.view
 import android.os.Build
 import android.view.HapticFeedbackConstants
 import android.widget.FrameLayout
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
